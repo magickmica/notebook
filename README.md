@@ -1,5 +1,7 @@
 
-Build YOur Own Notebook 
+Build Your Own Notebook 
+
+
 
 By Magick Mica TV 
 
