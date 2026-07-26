@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Magick Mica's Classical Meme Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Anton&family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #17150e; color: #f0e6d3; font-family: Georgia, serif;
+  padding: 26px 16px 60px; min-height: 100vh;
+}
+h1 {
+  text-align: center; font-size: .82rem; letter-spacing: .32em;
+  text-transform: uppercase; color: #c9a96e; font-weight: normal;
+  margin-bottom: 7px; line-height: 1.9;
+}
+.sub { text-align:center; font-size:.75rem; color:#5a5344; font-style:italic; margin-bottom:26px; }
+.layout {
+  display:flex; gap:30px; max-width:1000px; margin:0 auto;
+  align-items:flex-start; flex-wrap:wrap; justify-content:center;
+}
+
+/* stage */
+.stage {
+  position:relative; width:300px; height:534px; border-radius:12px;
+  overflow:hidden; background:#1d1b10; border:1px solid #3a3520; user-select:none;
+  transition:width .2s, height .2s;
+}
+#bg { width:100%; height:100%; object-fit:cover; display:block; }
+#ph {
+  position:absolute; inset:0; display:flex; flex-direction:column; gap:12px;
+  align-items:center; justify-content:center; color:#5a5344;
+  font-size:.8rem; font-style:italic; cursor:pointer; text-align:center; padding:20px;
+}
+#ph:hover { background:rgba(201,169,110,.04); }
+.ph-box {
+  width:52px; height:52px; border:1.5px dashed #3a3520; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+}
+#txt {
+  position:absolute; left:7%; top:52%; max-width:86%;
+  font-weight:bold; font-variant:small-caps; line-height:1.34;
+  letter-spacing:.03em; word-break:break-word; cursor:grab;
+  touch-action:none; display:none; color:#fff; font-size:22px;
+  white-space:pre-wrap;
+}
+#txt.grabbing { cursor:grabbing; }
+#frame { position:absolute; inset:0; pointer-events:none; }
+#spin {
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(23,21,14,.75); color:#c9a96e; font-size:.8rem; font-style:italic;
+}
+#spin.on { display:flex; }
+.hint { font-size:.6rem; color:#3f3a28; text-align:center; margin-top:7px; font-style:italic; min-height:1rem; }
+.hint.on { color:#7a6030; }
+
+.row2 { display:flex; gap:8px; margin-top:8px; }
+.btn {
+  flex:1; padding:10px; border-radius:8px; cursor:pointer; text-align:center;
+  font-family:Georgia,serif; font-size:.78rem; letter-spacing:.1em; transition:all .15s;
+}
+.btn-ghost { background:#22200f; border:1px dashed #4a4020; color:#c9a96e; }
+.btn-ghost:hover { background:#2a2510; border-color:#c9a96e; }
+.btn-solid { background:#7a5c0e; border:none; color:#f0e6d3; font-variant:small-caps; }
+.btn-solid:hover:not(:disabled) { background:#9a7410; }
+.btn-solid:disabled { opacity:.35; cursor:not-allowed; }
+#name { font-size:.6rem; color:#4a4438; margin-top:8px; text-align:center; font-style:italic; min-height:1em; line-height:1.4; }
+
+/* controls */
+.controls { flex:1; min-width:290px; max-width:540px; }
+.lbl { display:block; font-size:.64rem; letter-spacing:.2em; text-transform:uppercase; color:#c9a96e; margin-bottom:8px; }
+textarea, input[type=text], input[type=number] {
+  background:#22200f; border:1px solid #3a3520; border-radius:6px; color:#f0e6d3;
+  font-family:Georgia,serif; outline:none;
+}
+textarea { width:100%; padding:10px 12px; font-size:.95rem; resize:vertical; line-height:1.5; }
+textarea:focus, input:focus { border-color:#c9a96e; }
+
+.styles { display:flex; gap:14px; align-items:flex-end; margin-top:14px; flex-wrap:wrap; }
+.sgroup { display:flex; flex-direction:column; gap:6px; }
+.sgroup .lbl { margin-bottom:0; }
+.cwrap { display:flex; align-items:center; gap:6px; }
+#swatch { width:32px; height:32px; border-radius:6px; border:1px solid #3a3520; cursor:pointer; flex-shrink:0; }
+#hex { width:84px; padding:6px 8px; font-family:monospace; font-size:.85rem; }
+#size { width:56px; padding:6px 8px; font-size:.85rem; text-align:center; -moz-appearance:textfield; }
+#size::-webkit-outer-spin-button, #size::-webkit-inner-spin-button { -webkit-appearance:none; }
+.step {
+  width:26px; height:32px; background:#22200f; border:1px solid #3a3520;
+  border-radius:5px; color:#c9a96e; cursor:pointer; font-size:1rem;
+}
+.step:hover { border-color:#c9a96e; }
+.tgl { width:34px; height:18px; background:#3a3520; border-radius:9px; position:relative; cursor:pointer; border:none; transition:background .2s; }
+.tgl.on { background:#7a5c0e; }
+.tgl::after { content:''; position:absolute; width:12px; height:12px; border-radius:50%; background:#c9a96e; top:3px; left:3px; transition:transform .2s; }
+.tgl.on::after { transform:translateX(16px); }
+
+.pills { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:13px; }
+.pill {
+  padding:5px 12px; border-radius:20px; cursor:pointer; font-family:Georgia,serif;
+  font-size:.71rem; letter-spacing:.06em; border:1px solid #3a3520;
+  background:#22200f; color:#8a8272; transition:all .12s;
+}
+.pill:hover { border-color:#7a5c0e; color:#c9a96e; }
+.pill.on { background:#7a5c0e; border-color:#c9a96e; color:#f0e6d3; }
+.pill.gen { background:#191f14; border-color:#3a4a30; color:#8ab870; }
+.pill.gen:hover { background:#1e2f18; border-color:#8ab870; }
+.pill.gen:disabled { opacity:.5; cursor:not-allowed; }
+
+.tabrow { display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; flex-wrap:wrap; gap:8px; }
+#caps { display:flex; flex-direction:column; gap:6px; max-height:210px; overflow-y:auto; padding-right:3px; }
+.cap {
+  text-align:left; padding:9px 14px; background:#1e1c0f; border:1px solid #2a2818;
+  border-radius:6px; color:#948c7c; cursor:pointer; font-size:.83rem;
+  font-family:Georgia,serif; line-height:1.45; transition:all .1s;
+}
+.cap:hover { background:#252210; color:#c9a96e; }
+.cap.on { background:#2a2010; border-color:#c9a96e; color:#f0e6d3; }
+
+/* gallery */
+.gal { margin-top:22px; border-top:1px solid #2a2810; padding-top:16px; }
+.searchbar { display:flex; gap:8px; margin-bottom:12px; }
+#q { flex:1; padding:8px 12px; font-size:.85rem; }
+#grid { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; min-height:60px; }
+.tile {
+  aspect-ratio:2/3; border-radius:4px; border:2px solid transparent; cursor:pointer;
+  overflow:hidden; background:#22200f; transition:all .12s; position:relative;
+}
+.tile:hover { border-color:#7a5c0e; }
+.tile.on { border-color:#c9a96e; }
+.tile img { width:100%; height:100%; object-fit:cover; display:block; }
+.note { font-size:.66rem; color:#4a4438; font-style:italic; line-height:1.6; margin-top:10px; }
+.note a { color:#7a6030; }
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:#17150e; }
+::-webkit-scrollbar-thumb { background:#3a3520; border-radius:2px; }
+</style>
+</head>
+<body>
+
+<h1>Magick Mica's<br/><span style="font-size:1.25em;letter-spacing:.28em">Classical Meme Generator</span></h1>
+<p class="sub">Fine art. Relatable suffering.</p>
+
+<div class="layout">
+
+  <!-- LEFT -->
+  <div id="leftcol">
+    <div class="stage" id="stage">
+      <img id="bg" alt="" crossorigin="anonymous" style="display:none"/>
+      <div id="ph" onclick="file.click()">
+        <div class="ph-box">🖼</div>
+        <span>Pick a painting below</span>
+        <span style="font-size:.65rem;color:#3a3520">or click to upload your own</span>
+      </div>
+      <div id="txt"></div>
+      <div id="frame"></div>
+      <div id="spin">Loading painting…</div>
+    </div>
+    <p class="hint" id="hint">✦ Drag the text to reposition it</p>
+
+    <div class="row2">
+      <div class="btn btn-ghost" onclick="file.click()">⬆ Upload</div>
+      <button class="btn btn-solid" id="dl" onclick="save()" disabled>↓ Download</button>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden onchange="onUpload(event)"/>
+    <p id="name"></p>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="controls">
+
+    <label class="lbl">Caption</label>
+    <textarea id="cap" rows="3" oninput="setCap(this.value)">This too shall pass, but at what cost</textarea>
+
+    <div class="styles">
+      <div class="sgroup">
+        <span class="lbl">Color</span>
+        <div class="cwrap">
+          <input type="color" id="swatch" value="#ffffff" oninput="setColor(this.value)"/>
+          <input type="text" id="hex" value="#ffffff" maxlength="7" oninput="setColor(this.value)"/>
+        </div>
+      </div>
+      <div class="sgroup">
+        <span class="lbl">Size</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="step" onclick="bump(-2)">−</button>
+          <input type="number" id="size" value="22" min="8" max="120" oninput="setSize(+this.value)"/>
+          <button class="step" onclick="bump(2)">+</button>
+        </div>
+      </div>
+      <div class="sgroup">
+        <span class="lbl">Shadow</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="tgl on" id="tgl" onclick="toggleShadow()"></button>
+          <span style="font-size:.72rem;color:#8a8272" id="tglLbl">On</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pills">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Presets:</span>
+      <button class="pill" onclick="preset('#ffffff',true)">White</button>
+      <button class="pill" onclick="preset('#f5d27a',true)">Gold</button>
+      <button class="pill" onclick="preset('#111111',false)">Black</button>
+      <button class="pill" onclick="preset('#c0392b',true)">Blood Red</button>
+      <button class="pill" onclick="preset('#ddd5c8',false)">Ghostly</button>
+    </div>
+
+    <div class="pills" style="margin-top:16px">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Font:</span>
+      <button class="pill on" id="f-georgia" onclick="setFont('georgia')" style="font-family:Georgia,serif">Georgia</button>
+      <button class="pill" id="f-cinzel" onclick="setFont('cinzel')" style="font-family:'Cinzel',serif">Cinzel</button>
+      <button class="pill" id="f-playfair" onclick="setFont('playfair')" style="font-family:'Playfair Display',serif">Playfair</button>
+      <button class="pill" id="f-garamond" onclick="setFont('garamond')" style="font-family:'EB Garamond',serif">Garamond</button>
+      <button class="pill" id="f-anton" onclick="setFont('anton')" style="font-family:'Anton',sans-serif">Anton</button>
+      <button class="pill" id="f-bebas" onclick="setFont('bebas')" style="font-family:'Bebas Neue',sans-serif">Bebas</button>
+      <button class="pill" id="f-elite" onclick="setFont('elite')" style="font-family:'Special Elite',monospace">Typewriter</button>
+    </div>
+
+    <div class="pills" style="margin-top:10px">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Case:</span>
+      <button class="pill on" id="k-smallcaps" onclick="setCase('smallcaps')">Small Caps</button>
+      <button class="pill" id="k-upper" onclick="setCase('upper')">UPPERCASE</button>
+      <button class="pill" id="k-normal" onclick="setCase('normal')">As Typed</button>
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase;margin-left:8px">Align:</span>
+      <button class="pill on" id="a-left" onclick="setAlign('left')">Left</button>
+      <button class="pill" id="a-center" onclick="setAlign('center')">Center</button>
+    </div>
+
+    <div class="pills" style="margin-top:10px">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Frame:</span>
+      <button class="pill on" id="fr-none" onclick="setFrame('none')">None</button>
+      <button class="pill" id="fr-hairline" onclick="setFrame('hairline')">Hairline</button>
+      <button class="pill" id="fr-double" onclick="setFrame('double')">Double</button>
+      <button class="pill" id="fr-mat" onclick="setFrame('mat')">Gallery Mat</button>
+      <button class="pill" id="fr-vignette" onclick="setFrame('vignette')">Vignette</button>
+      <button class="pill" id="fr-bars" onclick="setFrame('bars')">Cinema Bars</button>
+    </div>
+
+    <div class="pills" style="margin-top:16px">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Shape:</span>
+      <button class="pill on" id="ar-9x16" onclick="setRatio('9x16')">9:16 Story</button>
+      <button class="pill" id="ar-4x5" onclick="setRatio('4x5')">4:5 Post</button>
+      <button class="pill" id="ar-1x1" onclick="setRatio('1x1')">1:1 Square</button>
+      <button class="pill" id="ar-16x9" onclick="setRatio('16x9')">16:9 Wide</button>
+    </div>
+
+    <div class="pills" style="margin-top:10px">
+      <span style="font-size:.62rem;letter-spacing:.15em;color:#5a5344;text-transform:uppercase">Export:</span>
+      <button class="pill" id="ox-1080" onclick="setOut(1080)">1080px</button>
+      <button class="pill" id="ox-1350" onclick="setOut(1350)">1350px</button>
+      <button class="pill on" id="ox-1600" onclick="setOut(1600)">1600px</button>
+    </div>
+
+    <div class="tabrow">
+      <div style="display:flex;gap:6px">
+        <button class="pill on" id="t-dread" onclick="setTab('dread')">Existential Dread</button>
+        <button class="pill" id="t-work" onclick="setTab('work')">Work Pain</button>
+      </div>
+      <button class="pill gen" id="gen" onclick="genCaptions()">✦ Generate More</button>
+    </div>
+    <div id="caps"></div>
+
+    <div class="gal">
+      <label class="lbl">Pick a Painting</label>
+      <div class="searchbar">
+        <input type="text" id="q" placeholder="Search Wikimedia Commons — e.g. Vermeer, Ophelia, storm at sea"
+               onkeydown="if(event.key==='Enter')search()"/>
+        <button class="pill" onclick="search()">Search</button>
+      </div>
+      <div class="pills" style="margin:0 0 12px">
+        <button class="pill on" id="c-portraits" onclick="loadSet('portraits')">Portraits</button>
+        <button class="pill" id="c-romantic" onclick="loadSet('romantic')">Romantic</button>
+        <button class="pill" id="c-moody" onclick="loadSet('moody')">Moody</button>
+      </div>
+      <div id="grid"></div>
+      <p class="note" id="galNote">Images come live from
+        <a href="https://commons.wikimedia.org/wiki/Category:Paintings" target="_blank">Wikimedia Commons</a>
+        — all public domain.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ─── config ─────────────────────────────────────────────────────────── */
+const API_KEY = 'YOUR_ANTHROPIC_API_KEY_HERE'; // optional — for ✦ Generate More
+
+/* ─── curated sets (filenames only — API resolves real URLs) ─────────── */
+const SETS = {
+  portraits: [
+    '1665 Girl with a Pearl Earring.jpg',
+    'Lady with an Ermine - Leonardo da Vinci - Google Art Project.jpg',
+    'Petrus Christus - Portrait of a Young Woman - Google Art Project.jpg',
+    'Mona Lisa, by Leonardo da Vinci, from C2RMF retouched.jpg',
+    'Vermeer - De Melkmeid.jpg',
+    'Jan Vermeer van Delft - Woman in Blue Reading a Letter - Google Art Project.jpg',
+    'Johannes Vermeer - The Love Letter - Google Art Project.jpg',
+    'Rembrandt van Rijn - Self-Portrait - Google Art Project.jpg',
+    'Ghirlandaio Giovanna Tornabuoni.jpg',
+    'Hans Memling - Portrait of a Young Woman - Google Art Project.jpg',
+    'Rogier van der Weyden - Portrait of a Lady - National Gallery of Art.jpg',
+    'Raphael - Portrait of a Woman - Google Art Project.jpg',
+  ],
+  romantic: [
+    'John Everett Millais - Ophelia - Google Art Project.jpg',
+    'Flaming June, by Frederic Lord Leighton (1830-1896).jpg',
+    'John William Waterhouse - The Lady of Shalott.jpg',
+    'Hylas and the Nymphs Manchester Art Gallery 1896.15.jpg',
+    'Rossetti Proserpine.jpg',
+    'Rossetti La Ghirlandata.jpg',
+    'Sandro Botticelli - La nascita di Venere - Google Art Project - edited.jpg',
+    'Botticelli-primavera.jpg',
+    'Fragonard, The Swing.jpg',
+    'Artemisia Gentileschi - Judith Slaying Holofernes - WGA8563.jpg',
+    'John Everett Millais - Isabella.jpg',
+    'John William Waterhouse Miranda - The Tempest.jpg',
+  ],
+  moody: [
+    'Edvard Munch, 1893, The Scream, oil, tempera and pastel on cardboard, 91 x 73 cm, National Gallery of Norway.jpg',
+    'Caspar David Friedrich - Wanderer above the sea of fog.jpg',
+    'Caspar David Friedrich - Two Men Contemplating the Moon - Google Art Project.jpg',
+    'Caspar David Friedrich - Frau am Fenster - Google Art Project.jpg',
+    'Francisco de Goya, Saturno devorando a su hijo (1819-1823).jpg',
+    'John Henry Fuseli - The Nightmare.JPG',
+    'Van Gogh - Starry Night - Google Art Project.jpg',
+    'Van Gogh - Worn Out.jpg',
+    'Vincent van Gogh - Self-Portrait with Bandaged Ear.jpg',
+    'Rembrandt van Rijn - De Nachtwacht.jpg',
+    'Arnold Böcklin - Die Toteninsel I (Kunstmuseum Basel).jpg',
+    'Hubert von Herkomer - Hard Times, 1885.jpg',
+  ],
+};
+
+const CAPS = {
+  dread: [
+    "This too shall pass, but at what cost",
+    "I am fine. This is fine. Everything is fine.",
+    "I made a pros and cons list. The cons won.",
+    "What is time. What is meaning. What is a W-2.",
+    "Nothing matters and yet everything costs money.",
+    "I asked for a sign. The sign said 'good luck with that'.",
+    "I have achieved a tiredness that transcends sleep.",
+    "Perhaps this is what they meant by 'character building'.",
+    "I contain multitudes. Most of them are tired.",
+  ],
+  work: [
+    "Another day of pretending I have it together",
+    "The meeting that could have been an email: Hour 3",
+    "Functioning member of society (citation needed)",
+    "Sent a professional email. Cried immediately after.",
+    "Adulting is googling everything and hoping for the best",
+    "My therapist said 'set boundaries'. She hasn't seen my inbox.",
+    "The quarterly review is in 10 minutes and I haven't started",
+    "Out of office: emotionally. In office: physically.",
+    "I have been perceived. I did not consent to this.",
+  ],
+};
+
+/* ─── state ──────────────────────────────────────────────────────────── */
+let tab = 'dread', caption = CAPS.dread[0];
+let color = '#ffffff', size = 22, shadow = true;
+let src = null, tx = 7, ty = 52;
+let ratio = '9x16', outW = 1600;
+let font = 'georgia', textCase = 'smallcaps', align = 'left', frame = 'none';
+
+const FONTS = {
+  georgia:  { css: 'Georgia, serif',                 weight: 'bold' },
+  cinzel:   { css: '"Cinzel", serif',                weight: '700'  },
+  playfair: { css: '"Playfair Display", serif',      weight: '700'  },
+  garamond: { css: '"EB Garamond", serif',           weight: '600'  },
+  anton:    { css: '"Anton", Impact, sans-serif',    weight: '400'  },
+  bebas:    { css: '"Bebas Neue", Impact, sans-serif', weight: '400' },
+  elite:    { css: '"Special Elite", monospace',     weight: '400'  },
+};
+
+// frame metrics as a fraction of image width, so preview and export match
+const FR = { inset1: .033, inset2: .052, line: .0045, mat: .055, bar: .10 };
+
+const RATIOS = {
+  '9x16': 9 / 16,
+  '4x5':  4 / 5,
+  '1x1':  1,
+  '16x9': 16 / 9,
+};
+
+const $ = id => document.getElementById(id);
+
+function setFont(f) {
+  font = f;
+  Object.keys(FONTS).forEach(k => $('f-' + k).classList.toggle('on', k === f));
+  paint();
+}
+function setCase(k) {
+  textCase = k;
+  ['smallcaps','upper','normal'].forEach(x => $('k-' + x).classList.toggle('on', x === k));
+  paint();
+}
+function setAlign(a) {
+  align = a;
+  ['left','center'].forEach(x => $('a-' + x).classList.toggle('on', x === a));
+  paint();
+}
+function setFrame(f) {
+  frame = f;
+  ['none','hairline','double','mat','vignette','bars']
+    .forEach(x => $('fr-' + x).classList.toggle('on', x === f));
+  paint();
+}
+
+/* ─── stage sizing ───────────────────────────────────────────────────── */
+function setRatio(r) {
+  ratio = r;
+  Object.keys(RATIOS).forEach(k => $('ar-' + k).classList.toggle('on', k === r));
+  sizeStage();
+}
+
+function setOut(w) {
+  outW = w;
+  [1080, 1350, 1600].forEach(n => $('ox-' + n).classList.toggle('on', n === w));
+}
+
+function sizeStage() {
+  const AR = RATIOS[ratio];        // width / height
+  const MAX_W = 380, MAX_H = 534;
+  let w = MAX_W, h = w / AR;
+  if (h > MAX_H) { h = MAX_H; w = h * AR; }
+  w = Math.round(w); h = Math.round(h);
+  const stage = $('stage');
+  stage.style.width = w + 'px';
+  stage.style.height = h + 'px';
+  $('leftcol').style.width = w + 'px';
+  paintFrame();
+}
+
+/* ─── Wikimedia API ──────────────────────────────────────────────────── */
+async function resolve(filename, width) {
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&titles=' +
+    encodeURIComponent('File:' + filename) +
+    '&prop=imageinfo&iiprop=url&iiurlwidth=' + width + '&format=json&origin=*';
+  const r = await fetch(url);
+  const d = await r.json();
+  const page = Object.values(d.query.pages)[0];
+  if (page.missing !== undefined || !page.imageinfo) throw new Error('not found');
+  return page.imageinfo[0].thumburl || page.imageinfo[0].url;
+}
+
+async function searchCommons(query) {
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search' +
+    '&gsrsearch=' + encodeURIComponent('filetype:bitmap painting ' + query) +
+    '&gsrnamespace=6&gsrlimit=18&prop=imageinfo&iiprop=url&iiurlwidth=160' +
+    '&format=json&origin=*';
+  const r = await fetch(url);
+  const d = await r.json();
+  if (!d.query || !d.query.pages) return [];
+  return Object.values(d.query.pages)
+    .filter(p => p.imageinfo)
+    .map(p => ({
+      title: p.title.replace(/^File:/, '').replace(/\.[^.]+$/, ''),
+      file: p.title.replace(/^File:/, ''),
+      thumb: p.imageinfo[0].thumburl,
+    }));
+}
+
+/* ─── gallery ────────────────────────────────────────────────────────── */
+async function loadSet(key) {
+  ['portraits','romantic','moody'].forEach(k =>
+    $('c-' + k).classList.toggle('on', k === key));
+  $('q').value = '';
+  $('galNote').textContent = 'Loading…';
+  const grid = $('grid');
+  grid.innerHTML = '';
+  const items = await Promise.all(SETS[key].map(async f => {
+    try { return { file: f, title: f.replace(/\.[^.]+$/, ''), thumb: await resolve(f, 160) }; }
+    catch { return null; }
+  }));
+  render(items.filter(Boolean));
+  $('galNote').innerHTML = 'Images come live from ' +
+    '<a href="https://commons.wikimedia.org/wiki/Category:Paintings" target="_blank">Wikimedia Commons</a> — all public domain.';
+}
+
+async function search() {
+  const q = $('q').value.trim();
+  if (!q) return;
+  ['portraits','romantic','moody'].forEach(k => $('c-' + k).classList.remove('on'));
+  $('galNote').textContent = 'Searching…';
+  $('grid').innerHTML = '';
+  try {
+    const results = await searchCommons(q);
+    render(results);
+    $('galNote').textContent = results.length
+      ? `${results.length} results for "${q}"`
+      : `No paintings found for "${q}" — try another word.`;
+  } catch {
+    $('galNote').textContent = 'Search failed — check your connection.';
+  }
+}
+
+function render(items) {
+  const grid = $('grid');
+  grid.innerHTML = '';
+  items.forEach(it => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.title = it.title;
+    const img = document.createElement('img');
+    img.src = it.thumb;
+    img.alt = it.title;
+    img.referrerPolicy = 'no-referrer';
+    tile.appendChild(img);
+    tile.onclick = async () => {
+      document.querySelectorAll('.tile').forEach(t => t.classList.remove('on'));
+      tile.classList.add('on');
+      $('spin').classList.add('on');
+      try {
+        const full = await resolve(it.file, 1000);
+        show(full, it.title);
+      } catch {
+        $('galNote').textContent = 'Could not load that painting — try another.';
+      }
+      $('spin').classList.remove('on');
+    };
+    grid.appendChild(tile);
+  });
+}
+
+/* ─── canvas / display ───────────────────────────────────────────────── */
+function show(url, title) {
+  src = url;
+  const bg = $('bg');
+  bg.src = url;
+  bg.style.display = 'block';
+  $('ph').style.display = 'none';
+  $('txt').style.display = 'block';
+  $('name').textContent = title || '';
+  $('dl').disabled = false;
+  $('hint').classList.add('on');
+  paint();
+}
+
+function onUpload(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('on'));
+    show(ev.target.result, f.name.replace(/\.[^.]+$/, ''));
+  };
+  r.readAsDataURL(f);
+  e.target.value = '';
+}
+
+/* ─── text styling ───────────────────────────────────────────────────── */
+function paint() {
+  const t = $('txt');
+  const f = FONTS[font];
+  t.textContent = caption;
+  t.style.color = color;
+  t.style.fontSize = size + 'px';
+  t.style.fontFamily = f.css;
+  t.style.fontWeight = f.weight;
+  t.style.fontVariant = textCase === 'smallcaps' ? 'small-caps' : 'normal';
+  t.style.textTransform = textCase === 'upper' ? 'uppercase' : 'none';
+  t.style.textShadow = shadow
+    ? '2px 2px 16px rgba(0,0,0,.95), 0 0 32px rgba(0,0,0,.7)' : 'none';
+  t.style.textAlign = align;
+  t.style.top = ty + '%';
+  if (align === 'center') {
+    t.style.left = '50%';
+    t.style.transform = 'translateX(-50%)';
+    t.style.maxWidth = '86%';
+  } else {
+    t.style.left = tx + '%';
+    t.style.transform = 'none';
+    t.style.maxWidth = (95 - tx) + '%';
+  }
+  paintFrame();
+}
+
+function paintFrame() {
+  const el = $('frame');
+  const W = $('stage').offsetWidth || 300;
+  const px = k => Math.max(1, Math.round(W * k));
+  el.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+  switch (frame) {
+    case 'hairline':
+      el.style.boxShadow =
+        `inset 0 0 0 ${px(FR.inset1)}px rgba(0,0,0,0), ` +
+        `inset 0 0 0 ${px(FR.inset1) + px(FR.line)}px rgba(255,255,255,.75)`;
+      el.style.clipPath = `inset(${px(FR.inset1)}px)`;
+      el.style.boxShadow = `inset 0 0 0 ${px(FR.line)}px rgba(255,255,255,.8)`;
+      break;
+    case 'double':
+      el.style.background = 'none';
+      el.innerHTML = '';
+      el.style.clipPath = 'none';
+      el.style.boxShadow = 'none';
+      const mk = (inset) => {
+        const d = document.createElement('div');
+        d.style.cssText = `position:absolute;inset:${inset}px;border:${px(FR.line)}px solid rgba(255,255,255,.8);`;
+        return d;
+      };
+      el.appendChild(mk(px(FR.inset1)));
+      el.appendChild(mk(px(FR.inset2)));
+      return;
+    case 'mat':
+      el.style.boxShadow = `inset 0 0 0 ${px(FR.mat)}px #efe7d6`;
+      break;
+    case 'vignette':
+      el.style.background =
+        'radial-gradient(ellipse at center, rgba(0,0,0,0) 42%, rgba(0,0,0,.72) 100%)';
+      break;
+    case 'bars':
+      el.style.background =
+        `linear-gradient(to bottom, #000 0, #000 ${FR.bar * 100}%, ` +
+        `rgba(0,0,0,0) ${FR.bar * 100}%, rgba(0,0,0,0) ${100 - FR.bar * 100}%, ` +
+        `#000 ${100 - FR.bar * 100}%, #000 100%)`;
+      break;
+  }
+  if (frame !== 'double') el.innerHTML = '';
+}
+
+function setCap(v) { caption = v; paint(); renderCaps(); }
+function setColor(v) {
+  const c = v.startsWith('#') ? v : '#' + v;
+  if (!/^#[0-9a-fA-F]{6}$/.test(c)) return;
+  color = c; $('swatch').value = c; $('hex').value = c; paint();
+}
+function setSize(v) { size = Math.max(8, Math.min(120, v || 22)); $('size').value = size; paint(); }
+function bump(d) { setSize(size + d); }
+function toggleShadow() {
+  shadow = !shadow;
+  $('tgl').classList.toggle('on', shadow);
+  $('tglLbl').textContent = shadow ? 'On' : 'Off';
+  paint();
+}
+function preset(c, s) {
+  setColor(c);
+  shadow = s;
+  $('tgl').classList.toggle('on', s);
+  $('tglLbl').textContent = s ? 'On' : 'Off';
+  paint();
+}
+
+/* ─── captions ───────────────────────────────────────────────────────── */
+function setTab(t) {
+  tab = t;
+  $('t-dread').classList.toggle('on', t === 'dread');
+  $('t-work').classList.toggle('on', t === 'work');
+  renderCaps();
+}
+
+function renderCaps() {
+  const box = $('caps');
+  box.innerHTML = '';
+  CAPS[tab].forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'cap' + (c === caption ? ' on' : '');
+    b.textContent = c;
+    b.onclick = () => { caption = c; $('cap').value = c; paint(); renderCaps(); };
+    box.appendChild(b);
+  });
+}
+
+async function genCaptions() {
+  if (API_KEY === 'YOUR_ANTHROPIC_API_KEY_HERE') {
+    alert('To use AI captions, open this file in a text editor and replace ' +
+          'YOUR_ANTHROPIC_API_KEY_HERE near the top of the script with your key ' +
+          'from console.anthropic.com.\n\nThe built-in captions work without it!');
+    return;
+  }
+  const b = $('gen');
+  b.textContent = 'Conjuring…'; b.disabled = true;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          `Generate 8 punchy meme captions in the style of "This too shall pass, but at what cost" — ` +
+          `short lines mixing dramatic classical tone with brutal modern relatability. No profanity. Focus on: ` +
+          (tab === 'dread' ? 'existential dread, nihilism, absurdity' : 'work stress, adulting exhaustion') +
+          `. Return ONLY a JSON array of 8 strings — no preamble, no backticks.` }]
+      })
+    });
+    const d = await r.json();
+    CAPS[tab] = [...JSON.parse(d.content[0].text.trim()), ...CAPS[tab]];
+    renderCaps();
+  } catch (e) { alert('Failed: ' + e.message); }
+  b.textContent = '✦ Generate More'; b.disabled = false;
+}
+
+/* ─── drag ───────────────────────────────────────────────────────────── */
+(function () {
+  const el = $('txt'), stage = $('stage');
+  let on = false, sx, sy, ox, oy;
+  const down = (x, y) => {
+    if (!src) return;
+    on = true; el.classList.add('grabbing');
+    sx = x; sy = y; ox = tx; oy = ty;
+  };
+  const move = (x, y) => {
+    if (!on) return;
+    const r = stage.getBoundingClientRect();
+    if (align === 'left') tx = Math.max(0, Math.min(82, ox + ((x - sx) / r.width) * 100));
+    ty = Math.max(0, Math.min(92, oy + ((y - sy) / r.height) * 100));
+    paint();
+  };
+  const up = () => { on = false; el.classList.remove('grabbing'); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); down(e.clientX, e.clientY); });
+  window.addEventListener('pointermove', e => move(e.clientX, e.clientY));
+  window.addEventListener('pointerup', up);
+})();
+
+/* ─── frame on canvas ────────────────────────────────────────────────── */
+function drawFrame(c, W, H) {
+  const lw = Math.max(1, W * FR.line);
+  c.save();
+  switch (frame) {
+    case 'hairline': {
+      const i = W * FR.inset1;
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = lw;
+      c.strokeRect(i, i, W - i * 2, H - i * 2);
+      break;
+    }
+    case 'double': {
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = lw;
+      [FR.inset1, FR.inset2].forEach(k => {
+        const i = W * k;
+        c.strokeRect(i, i, W - i * 2, H - i * 2);
+      });
+      break;
+    }
+    case 'mat': {
+      const m = W * FR.mat;
+      c.fillStyle = '#efe7d6';
+      c.fillRect(0, 0, W, m);
+      c.fillRect(0, H - m, W, m);
+      c.fillRect(0, 0, m, H);
+      c.fillRect(W - m, 0, m, H);
+      break;
+    }
+    case 'vignette': {
+      const g = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .21,
+                                       W / 2, H / 2, Math.max(W, H) * .72);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,.72)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, W, H);
+      break;
+    }
+    case 'bars': {
+      const b = H * FR.bar;
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, W, b);
+      c.fillRect(0, H - b, W, b);
+      break;
+    }
+  }
+  c.restore();
+}
+
+/* ─── download ───────────────────────────────────────────────────────── */
+function save() {
+  if (!src) return;
+  const b = $('dl');
+  b.textContent = 'Saving…'; b.disabled = true;
+
+  const f = FONTS[font];
+  const ready = document.fonts
+    ? document.fonts.load(`${f.weight} 40px ${f.css}`).catch(() => {})
+    : Promise.resolve();
+
+  ready.then(() => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.referrerPolicy = 'no-referrer';
+  img.onload = () => {
+    const stage = $('stage');
+    const stageW = stage.offsetWidth;
+    const S = outW / stageW;                 // scale preview → export
+    const W = Math.round(outW);
+    const H = Math.round(outW / RATIOS[ratio]);
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const c = cv.getContext('2d');
+
+    // cover-crop
+    const ia = img.width / img.height, ca = W / H;
+    let sw, sh, sx0, sy0;
+    if (ia > ca) { sh = img.height; sw = sh * ca; sx0 = (img.width - sw) / 2; sy0 = 0; }
+    else { sw = img.width; sh = sw / ca; sx0 = 0; sy0 = (img.height - sh) / 2; }
+    c.drawImage(img, sx0, sy0, sw, sh, 0, 0, W, H);
+
+    // text
+    const f = FONTS[font];
+    const fs = size * S;
+    c.font = `${f.weight} ${fs}px ${f.css}`;
+    if (textCase === 'smallcaps' && 'fontVariantCaps' in c) c.fontVariantCaps = 'small-caps';
+    c.fillStyle = color;
+    c.textAlign = align;
+    if (shadow) {
+      c.shadowColor = 'rgba(0,0,0,.9)';
+      c.shadowBlur = 20 * S; c.shadowOffsetX = c.shadowOffsetY = 2 * S;
+    }
+
+    const body = textCase === 'upper' ? caption.toUpperCase() : caption;
+    const x = align === 'center' ? W / 2 : (tx / 100) * W;
+    const maxW = align === 'center' ? W * 0.86 : W * (95 - tx) / 100;
+    const lh = fs * 1.34;
+
+    // respect manual line breaks, then word-wrap each paragraph
+    const lines = [];
+    body.split('\n').forEach(para => {
+      if (!para.trim()) { lines.push(''); return; }
+      let cur = '';
+      for (const w of para.split(' ')) {
+        const test = cur ? cur + ' ' + w : w;
+        if (c.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+    });
+
+    const y = (ty / 100) * H + fs * 0.9;
+    lines.forEach((ln, i) => { if (ln) c.fillText(ln, x, y + i * lh); });
+
+    c.shadowColor = 'transparent'; c.shadowBlur = 0;
+    c.shadowOffsetX = c.shadowOffsetY = 0;
+    drawFrame(c, W, H);
+
+    cv.toBlob(blob => {
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u; a.download = `classical-meme-${ratio}-${outW}.jpg`; a.click();
+      URL.revokeObjectURL(u);
+      b.textContent = '↓ Download'; b.disabled = false;
+    }, 'image/jpeg', .93);
+  };
+  img.onerror = () => {
+    alert('Could not export this image. Try uploading it manually with the ⬆ Upload button.');
+    b.textContent = '↓ Download'; b.disabled = false;
+  };
+  img.src = src;
+  });
+}
+
+/* ─── init ───────────────────────────────────────────────────────────── */
+sizeStage();
+paint();
+renderCaps();
+loadSet('portraits');
+</script>
+</body>
+</html>
